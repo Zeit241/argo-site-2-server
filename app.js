@@ -5,13 +5,13 @@ const app = express()
 
 app.use(cors({
     credentials: true,
-    origin: "http://localhost:3000"
+    origin: "*"
 }))
 app.use(express.json({}))
 app.use("/api/", router)
 
 
-app.listen(9999, ()=>{
+app.listen( ()=>{
     console.log("Server started on PORT 8080")
 })
 
