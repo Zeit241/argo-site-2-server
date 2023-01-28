@@ -6,7 +6,7 @@ const MYSQL = mysql.createConnection({
     host: "195.43.142.151",
     user:  "root",
     database:  "argo",
-    password:  "VladKlim\\2003"
+    password:  "Klimov!Vlad2003"
 });
 
 MYSQL.connect(function(err){
