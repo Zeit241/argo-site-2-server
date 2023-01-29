@@ -4,6 +4,7 @@ import MYSQL from "../database/db.js";
 import jwt_decode from "jwt-decode";
 import * as path from "path";
 import fs from "fs"
+import dirname from 'es-dirname'
 import * as constants from "constants";
 dotenv.config()
 
@@ -71,23 +72,53 @@ const get = (request, response) =>{
         if(res){
             response.json(res)
         }
-
-        console.log(err||res)
     })
 }
 
-const getFile = (request, response) =>{
-    const id = request?.query?.fileId
-
-    if(id !== undefined){
-        const dir_path = path.resolve(dirname(import.meta.url),".." ,"files", id.toString() + '.pdf')
-        fs.access(dir_path, constants.F_OK, (err) => {
-            if(err){
-                return response.status(404).end()
+const checkAccess = (request, response, next ,role) =>{
+    try{
+        const token = request.headers['authorization'].split(' ')[1]
+        MYSQL.query(`SELECT * FROM users WHERE ?`,[{token: token}], (err, res) =>{
+            if(res && res.length>0){
+                let user = res[0]
+                if(VerifyToken(token)){
+                    if(!user.role.includes(request.body.required_roles)){
+                        return response.status(403).end()
+                    }
+                    return next()
+                }
             }
-            response.download(path.resolve(dir_path))
+            return response.status(401).json({message: "Invalid token"})
         })
+    }catch (e) {
+        return response.status(401).end()
     }
 }
 
-export {login, find, create, verify, get, getFile}
+const getFile = (request, response) =>{
+    const file_id = request?.query?.fileId
+    if(file_id !== undefined && request.headers['authorization'].split(' ')[1]) {
+        try {
+           // const {id} = jwt_decode(request.headers['authorization'].split(' ')[1])
+            //if (id === file_id) {
+                const dir_path = path.resolve(decodeURIComponent(dirname()), "..", "files", file_id.toString() + '.pdf')
+                fs.access(dir_path, constants.F_OK, (err) => {
+                    console.log(err)
+                    if (err) {
+                        return response.status(404).end()
+                    }
+                    return response.download(dir_path)
+                })
+            // } else {
+            //     return response.status(404).end()
+            // }
+        } catch (er) {
+            console.log(er)
+            return response.status(404).end()
+        }
+    }else {
+        return response.status(404).end()
+    }
+}
+
+export {login, find, create, verify, get, getFile, checkAccess}

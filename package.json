@@ -5,15 +5,17 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "cross-env JWT_SECRET=1111 DB_HOST=localhost DB_USER=root DB_PASS=qwerty DB_NAME=argo PROXY=http://localhost:3000 nodemon app.js",
+    "prod": "cross-env JWT_SECRET=1111 DB_HOST=195.43.142.151 DB_USER=root DB_PASS=Klimov!Vlad2003 DB_NAME=argo PROXY=http://localhost:3000 nodemon app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
+    "es-dirname": "^0.1.0",
     "esbuild": "0.17.5",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
