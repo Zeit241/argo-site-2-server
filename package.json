@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env JWT_SECRET=1111 DB_HOST=localhost DB_USER=root DB_PASS=qwerty DB_NAME=argo PROXY=http://localhost:3000 nodemon app.js",
-    "prod": "cross-env JWT_SECRET=1111 DB_HOST=195.43.142.151 DB_USER=root DB_PASS=Klimov!Vlad2003 DB_NAME=argo PROXY=http://localhost:3000 node app.js"
+    "prod": "cross-env JWT_SECRET=1111 DB_HOST=0.0.0.0 DB_USER=root DB_PASS=Klimov!Vlad2003 DB_NAME=argo PROXY=http://localhost:3000 node app.js"
   },
   "keywords": [],
   "author": "",

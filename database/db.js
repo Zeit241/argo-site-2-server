@@ -21,10 +21,11 @@ MYSQL.getConnection(function(err, connection) {
             }else {
                 console.log("Подключение к серверу MySQL успешно установлено");
             }
+            return connection.release();
         });
 
     }
-    return connection.release();
+
 })
 
 
