@@ -13,48 +13,66 @@ const login = (request, response) => {
     const password = request.body?.password
 
     if(!username && !password) return response.status(422).json({message: "Ошибка! Обязательные данные отсутствуют."})
-    MYSQL.query(`SELECT * FROM users WHERE ?`,[{username: username}],(err, res)=>{
-        console.log(res||err)
-        if(res && res.length>0){
-            let user = res[0]
-            if (password === user.password){
-                if(!VerifyToken(user.token)) {
-                    user.token = CreateToken({
-                        id: user.id,
-                        username: user.username
+    MYSQL.getConnection((err, connection)=>{
+        connection.connect((err)=>{
+            return response.status(500).json({
+                message: "Ошибка! База данных не подключена."
+            })
+        })
+        connection.query(`SELECT * FROM users WHERE ?`,[{username: username}],(err, res)=>{
+            console.log(res||err)
+            if(res && res.length>0){
+                let user = res[0]
+                if (password === user.password){
+                    if(!VerifyToken(user.token)) {
+                        user.token = CreateToken({
+                            id: user.id,
+                            username: user.username
+                        })
+                        MYSQL.query(`UPDATE users SET ? WHERE id=${user.id}`, [{token: user.token}])
+                    }
+                    return response.status(200).json({
+                        username:  res[0].username,
+                        token: user.token,
+                        status: true
                     })
-                    MYSQL.query(`UPDATE users SET ? WHERE id=${user.id}`, [{token: user.token}])
                 }
-                return response.status(200).json({
-                    username:  res[0].username,
-                    token: user.token,
-                    status: true
-                })
             }
-        }
-        return response.status(401).json({
-            message: "Ошибка! Данные введены неверно."
-        }).end()
+            return response.status(401).json({
+                message: "Ошибка! Данные введены неверно."
+            })
+        })
+        connection.release()
     })
+
 }
 
 const verify = (request, response) => {
     try{
         const token = request.headers['authorization'].split(' ')[1]
-        MYSQL.query(`SELECT * FROM users WHERE ?`,[{token: token}], (err, res) =>{
-            if(res && res.length>0){
-                let user = res[0]
-                if(VerifyToken(token)){
-                    if(!user.role.includes(request.body.required_roles)){
-                        return response.status(403).end()
+        MYSQL.getConnection((err, connection)=> {
+            connection.connect((err) => {
+                return response.status(500).json({
+                    message: "Ошибка! База данных не подключена."
+                })
+            })
+            connection.query(`SELECT * FROM users WHERE ?`,[{token: token}], (err, res) =>{
+                if(res && res.length>0){
+                    let user = res[0]
+                    if(VerifyToken(token)){
+                        if(!user.role.includes(request.body.required_roles)){
+                            return response.status(403).json({message: "Not enough permission to access this page"})
+                        }
+                        return response.status(200).end()
                     }
-                    return response.status(200).end()
                 }
-            }
-            return response.status(401).json({message: "Invalid token"})
+                return response.status(401).json({message: "Invalid token"})
+            })
+            connection.release()
         })
+
     }catch (e) {
-        return response.status(401).end()
+        return response.status(401).json({message: "Bad request data"})
     }
 }
 
@@ -68,11 +86,20 @@ const create = (request, response) => {
 
 const get = (request, response) =>{
     const {id} = jwt_decode(request.headers['authorization'].split(' ')[1])
-    MYSQL.query("SELECT * FROM orders WHERE ?", [{owner_id: id}], (err, res)=>{
-        if(res){
-            response.json(res)
-        }
+    MYSQL.getConnection((err, connection)=> {
+        connection.connect((err) => {
+            return response.status(500).json({
+                message: "Ошибка! База данных не подключена."
+            })
+        })
+        connection.query("SELECT * FROM orders WHERE ?", [{owner_id: id}], (err, res)=>{
+            if(res){
+                response.status(200).json(res)
+            }
+        })
+        connection.release()
     })
+
 }
 
 const checkAccess = (request, response, next ,role) =>{
@@ -105,7 +132,7 @@ const getFile = (request, response) =>{
                 fs.access(dir_path, constants.F_OK, (err) => {
                     console.log(err)
                     if (err) {
-                        return response.status(404).end()
+                        return response.status(404).json({message: "File not found"})
                     }
                     return response.download(dir_path)
                 })
@@ -114,10 +141,10 @@ const getFile = (request, response) =>{
             // }
         } catch (er) {
             console.log(er)
-            return response.status(404).end()
+            return response.status(404).json({message: "Bad request data"})
         }
     }else {
-        return response.status(404).end()
+        return response.status(404).json({message: "Id is not defined"})
     }
 }
 
